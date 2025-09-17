@@ -67,10 +67,7 @@
         </article>
     </div>
 
-    <div class="btn-container">
-        <a href="assessment.php"><button class="btn btn-yellow">Start Assessment</button></a>
-        <a href="index.html"><button class="btn btn-black">Explore Pathways</button></a>
-    </div>
+    
 </div>
 
 <div id="login-modal" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 hidden">

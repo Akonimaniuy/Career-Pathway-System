@@ -46,7 +46,7 @@ class HomeController extends Controller
     {
         $data = [
             'title' => 'Explore Pathways',
-            'message' => 'Discover various career pathways and opportunities'
+            'message' => 'Discover career pathways that match your interests and skills. Browse the cards to learn more about each field and explore opportunities.'
         ];
         
         $this->render('pathway', $data);
