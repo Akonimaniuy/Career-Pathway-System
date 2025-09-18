@@ -69,5 +69,11 @@ $router->add('login', ['controller' => 'AuthController', 'action' => 'login']);
 $router->add('register', ['controller' => 'AuthController', 'action' => 'register']);
 $router->add('logout', ['controller' => 'AuthController', 'action' => 'logout']);
 
+// ADMIN ROUTES - Add these new admin routes
+$router->add('admin', ['controller' => 'AdminController', 'action' => 'index']);
+$router->add('admin/users', ['controller' => 'AdminController', 'action' => 'users']);
+$router->add('admin/user/{id:\d+}/edit', ['controller' => 'AdminController', 'action' => 'editUser']);
+$router->add('admin/user/{id:\d+}/delete', ['controller' => 'AdminController', 'action' => 'deleteUser']);
+
 // Dispatch the request
 $router->dispatch($requestUri);

@@ -1,9 +1,11 @@
 <?php
+// File: views/layout/navbar.php (Updated to include admin link for admins)
 // Safe navbar that shows login/register when guest, and welcome + logout when authenticated.
-// Hides "Register" when on register page and "Login" when on login page.
+// Shows Admin link for admin users.
 
 $isLogged = false;
 $username = '';
+$isAdmin = false;
 
 // determine current path relative to app base
 $fullPath = $_SERVER['REQUEST_URI'] ?? '/';
@@ -24,6 +26,7 @@ if (class_exists('\\core\\Auth')) {
             $isLogged = true;
             $u = $auth->user();
             $username = $u['name'] ?? $u['email'] ?? ($u['id'] ?? '');
+            $isAdmin = ($u['role'] ?? 'user') === 'admin';
         }
     } catch (Throwable $e) {
         // silent fallback to guest view
@@ -42,13 +45,20 @@ if (class_exists('\\core\\Auth')) {
           <a href="/cpsproject/about" class="text-gray-600 hover:text-gray-900">About</a>
           <a href="/cpsproject/pathway" class="text-gray-600 hover:text-gray-900">Pathways</a>
           <a href="/cpsproject/assessment" class="text-gray-600 hover:text-gray-900">Assessment</a>
-
+          <?php if ($isAdmin): ?>
+            <a href="/cpsproject/admin" class="text-red-600 hover:text-red-700 font-medium">Admin</a>
+          <?php endif; ?>
         </div>
       </div>
 
       <div class="flex items-center space-x-4">
         <?php if ($isLogged): ?>
-          <span class="text-sm text-gray-700 hidden sm:inline">Welcome, <?php echo htmlentities($username, ENT_QUOTES, 'UTF-8'); ?></span>
+          <span class="text-sm text-gray-700 hidden sm:inline">
+            Welcome, <?php echo htmlentities($username, ENT_QUOTES, 'UTF-8'); ?>
+            <?php if ($isAdmin): ?>
+              <span class="ml-1 text-xs bg-red-100 text-red-800 px-1 py-0.5 rounded">Admin</span>
+            <?php endif; ?>
+          </span>
           <a href="/cpsproject/logout" class="px-3 py-2 rounded-md text-sm font-medium bg-red-100 text-red-700 hover:bg-red-200">Logout</a>
         <?php else: ?>
           <button id="login-modal-btn" class="px-3 py-2 rounded-md text-sm font-medium bg-blue-600 text-white hover:bg-blue-700">Login</button>
@@ -69,7 +79,11 @@ if (class_exists('\\core\\Auth')) {
       <a href="/cpsproject" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50">Home</a>
       <a href="/cpsproject/users" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50">Users</a>
       <a href="/cpsproject/about" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50">About</a>
-      <a href="/cpsproject/what" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50">What me</a>
+      <a href="/cpsproject/pathway" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50">Pathways</a>
+      <a href="/cpsproject/assessment" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50">Assessment</a>
+      <?php if ($isAdmin): ?>
+        <a href="/cpsproject/admin" class="block px-3 py-2 rounded-md text-base font-medium text-red-600 hover:bg-red-50">Admin Panel</a>
+      <?php endif; ?>
       <?php if ($isLogged): ?>
         <a href="/cpsproject/logout" class="block px-3 py-2 rounded-md text-base font-medium text-red-700 hover:bg-red-50">Logout</a>
       <?php else: ?>
@@ -91,4 +105,3 @@ if (class_exists('\\core\\Auth')) {
     })();
   </script>
 </nav>
-

@@ -1,4 +1,5 @@
 <?php
+// File: core/Auth.php (Updated to load user role)
 namespace core;
 
 use core\Database;
@@ -172,10 +173,11 @@ class Auth
 
     protected function loginSession(array $userRow)
     {
-        // Minimal user session footprint
+        // Minimal user session footprint - now includes role
         $_SESSION['auth_user_id'] = $userRow['id'];
         $_SESSION['auth_user_email'] = $userRow['email'];
         $_SESSION['auth_user_name'] = $userRow['name'] ?? null;
+        $_SESSION['auth_user_role'] = $userRow['role'] ?? 'user';
         // regenerate session id
         Session::regenerate();
         $this->loadUserFromSession();
@@ -184,7 +186,7 @@ class Auth
     protected function loadUserFromSession()
     {
         if (!empty($_SESSION['auth_user_id'])) {
-            $stmt = $this->db->prepare("SELECT id, name, email, created_at FROM " . AUTH_USER_TABLE . " WHERE id = :id LIMIT 1");
+            $stmt = $this->db->prepare("SELECT id, name, email, role, created_at FROM " . AUTH_USER_TABLE . " WHERE id = :id LIMIT 1");
             $stmt->execute(['id' => $_SESSION['auth_user_id']]);
             $this->user = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
         } else {
