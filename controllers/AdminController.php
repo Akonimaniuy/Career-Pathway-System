@@ -1,5 +1,5 @@
 <?php
-// File: controllers/AdminController.php (Extended with pathway management)
+// File: controllers/AdminController.php (Updated for existing database)
 namespace controllers;
 
 use core\Controller;
@@ -9,6 +9,7 @@ use core\CSRF;
 use models\UserModel;
 use models\CategoryModel;
 use models\PathwayModel;
+use models\QuestionModel;
 use \Exception;
 
 class AdminController extends Controller
@@ -16,6 +17,7 @@ class AdminController extends Controller
     private $userModel;
     private $categoryModel;
     private $pathwayModel;
+    private $questionModel;
     protected $auth;
 
     public function __construct($params = [])
@@ -24,6 +26,7 @@ class AdminController extends Controller
         $this->userModel = new UserModel();
         $this->categoryModel = new CategoryModel();
         $this->pathwayModel = new PathwayModel();
+        $this->questionModel = new QuestionModel();
 
         Session::start();
         $this->auth = new Auth();
@@ -59,7 +62,7 @@ class AdminController extends Controller
         }
     }
 
-    // User Management (existing methods)
+    // User Management
     public function users()
     {
         try {
@@ -325,6 +328,238 @@ class AdminController extends Controller
             header('Location: /cpsproject/admin/pathways?success=pathway_deleted');
         } catch (Exception $e) {
             header('Location: /cpsproject/admin/pathways?error=delete_failed');
+        }
+        exit();
+    }
+
+    // Question Management
+    public function questions()
+    {
+        try {
+            $pathways = $this->pathwayModel->getAllPathways();
+            $questionStats = $this->questionModel->getQuestionStats();
+            $this->render('questions', [
+                'title' => 'Manage Assessment Questions', 
+                'pathways' => $pathways,
+                'questionStats' => $questionStats
+            ]);
+        } catch (Exception $e) {
+            $this->render('questions', [
+                'title' => 'Manage Assessment Questions', 
+                'pathways' => [],
+                'questionStats' => [],
+                'error' => 'Unable to load questions'
+            ]);
+        }
+    }
+
+    public function pathwayQuestions($pathwayId)
+    {
+        try {
+            $pathway = $this->pathwayModel->getPathwayById($pathwayId);
+            if (!$pathway) {
+                echo "Pathway not found";
+                return;
+            }
+            
+            $questions = $this->questionModel->getQuestionsByPathway($pathwayId);
+            $this->render('pathway_questions', [
+                'title' => 'Questions for ' . $pathway['name'],
+                'pathway' => $pathway,
+                'questions' => $questions
+            ]);
+        } catch (Exception $e) {
+            $this->render('pathway_questions', [
+                'title' => 'Pathway Questions', 
+                'questions' => [], 
+                'error' => 'Unable to load questions'
+            ]);
+        }
+    }
+
+    public function createQuestion($pathwayId = null)
+    {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            if (!isset($_POST[CSRF::FIELD]) || !CSRF::validate($_POST[CSRF::FIELD])) {
+                $pathways = $this->pathwayModel->getAllPathways();
+                $this->render('create_question', ['error' => 'Invalid CSRF token', 'title' => 'Create Question', 'pathways' => $pathways]);
+                return;
+            }
+
+            $pathwayId = $_POST['pathway_id'] ?? '';
+            $questionText = trim($_POST['question_text'] ?? '');
+            $questionType = $_POST['question_type'] ?? 'multiple_choice';
+            $difficultyLevel = $_POST['difficulty_level'] ?? 'medium';
+            $options = $_POST['options'] ?? [];
+
+            if (empty($pathwayId) || empty($questionText)) {
+                $pathways = $this->pathwayModel->getAllPathways();
+                $this->render('create_question', [
+                    'error' => 'Pathway and question text are required', 
+                    'title' => 'Create Question',
+                    'pathways' => $pathways
+                ]);
+                return;
+            }
+
+            // Validate options
+            $hasCorrectAnswer = false;
+            $processedOptions = [];
+            
+            foreach ($options as $index => $optionText) {
+                if (!empty(trim($optionText))) {
+                    $isCorrect = isset($_POST['correct_answer']) && $_POST['correct_answer'] == $index;
+                    if ($isCorrect) $hasCorrectAnswer = true;
+                    
+                    $processedOptions[] = [
+                        'text' => trim($optionText),
+                        'is_correct' => $isCorrect
+                    ];
+                }
+            }
+
+            if (count($processedOptions) < 2 || !$hasCorrectAnswer) {
+                $pathways = $this->pathwayModel->getAllPathways();
+                $this->render('create_question', [
+                    'error' => 'Please provide at least 2 options with one correct answer', 
+                    'title' => 'Create Question',
+                    'pathways' => $pathways
+                ]);
+                return;
+            }
+
+            try {
+                $this->questionModel->createQuestion([
+                    'pathway_id' => $pathwayId,
+                    'question_text' => $questionText,
+                    'question_type' => $questionType,
+                    'difficulty_level' => $difficultyLevel,
+                    'options' => $processedOptions
+                ]);
+                header('Location: /cpsproject/admin/questions?success=question_created');
+                exit();
+            } catch (Exception $e) {
+                $pathways = $this->pathwayModel->getAllPathways();
+                $this->render('create_question', [
+                    'error' => 'Failed to create question: ' . $e->getMessage(), 
+                    'title' => 'Create Question',
+                    'pathways' => $pathways
+                ]);
+            }
+        }
+
+        $pathways = $this->pathwayModel->getAllPathways();
+        $this->render('create_question', [
+            'title' => 'Create Question', 
+            'pathways' => $pathways,
+            'selectedPathway' => $pathwayId
+        ]);
+    }
+
+    public function editQuestion($id)
+    {
+        $question = $this->questionModel->getQuestionWithOptions($id);
+        
+        if (!$question) {
+            echo "Question not found";
+            return;
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            if (!isset($_POST[CSRF::FIELD]) || !CSRF::validate($_POST[CSRF::FIELD])) {
+                $pathways = $this->pathwayModel->getAllPathways();
+                $this->render('edit_question', [
+                    'error' => 'Invalid CSRF token', 
+                    'title' => 'Edit Question',
+                    'question' => $question,
+                    'pathways' => $pathways
+                ]);
+                return;
+            }
+
+            $questionText = trim($_POST['question_text'] ?? '');
+            $questionType = $_POST['question_type'] ?? 'multiple_choice';
+            $difficultyLevel = $_POST['difficulty_level'] ?? 'medium';
+            $options = $_POST['options'] ?? [];
+
+            if (empty($questionText)) {
+                $pathways = $this->pathwayModel->getAllPathways();
+                $this->render('edit_question', [
+                    'error' => 'Question text is required', 
+                    'title' => 'Edit Question',
+                    'question' => $question,
+                    'pathways' => $pathways
+                ]);
+                return;
+            }
+
+            // Validate options
+            $hasCorrectAnswer = false;
+            $processedOptions = [];
+            
+            foreach ($options as $index => $optionText) {
+                if (!empty(trim($optionText))) {
+                    $isCorrect = isset($_POST['correct_answer']) && $_POST['correct_answer'] == $index;
+                    if ($isCorrect) $hasCorrectAnswer = true;
+                    
+                    $processedOptions[] = [
+                        'text' => trim($optionText),
+                        'is_correct' => $isCorrect
+                    ];
+                }
+            }
+
+            if (count($processedOptions) < 2 || !$hasCorrectAnswer) {
+                $pathways = $this->pathwayModel->getAllPathways();
+                $this->render('edit_question', [
+                    'error' => 'Please provide at least 2 options with one correct answer', 
+                    'title' => 'Edit Question',
+                    'question' => $question,
+                    'pathways' => $pathways
+                ]);
+                return;
+            }
+
+            try {
+                $this->questionModel->updateQuestion($id, [
+                    'question_text' => $questionText,
+                    'question_type' => $questionType,
+                    'difficulty_level' => $difficultyLevel,
+                    'options' => $processedOptions
+                ]);
+                header('Location: /cpsproject/admin/questions?success=question_updated');
+                exit();
+            } catch (Exception $e) {
+                $pathways = $this->pathwayModel->getAllPathways();
+                $this->render('edit_question', [
+                    'error' => 'Failed to update question: ' . $e->getMessage(), 
+                    'title' => 'Edit Question',
+                    'question' => $question,
+                    'pathways' => $pathways
+                ]);
+            }
+        }
+        
+        $pathways = $this->pathwayModel->getAllPathways();
+        $this->render('edit_question', [
+            'title' => 'Edit Question', 
+            'question' => $question,
+            'pathways' => $pathways
+        ]);
+    }
+
+    public function deleteQuestion($id)
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: /cpsproject/admin/questions');
+            exit();
+        }
+
+        try {
+            $this->questionModel->deleteQuestion($id);
+            header('Location: /cpsproject/admin/questions?success=question_deleted');
+        } catch (Exception $e) {
+            header('Location: /cpsproject/admin/questions?error=delete_failed');
         }
         exit();
     }

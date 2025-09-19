@@ -1,6 +1,6 @@
 <?php
-// File: views/layout/admin_navbar.php
-// Admin-specific navbar with admin links
+// File: views/layout/admin_navbar.php (Updated)
+// Admin-specific navbar with admin links including questions
 
 $isLogged = false;
 $username = '';
@@ -43,7 +43,10 @@ if (class_exists('\\core\\Auth')) {
         </a>
         <div class="hidden md:flex space-x-4">
           <a href="/cpsproject/admin" class="text-red-100 hover:text-white">Dashboard</a>
-          <a href="/cpsproject/admin/users" class="text-red-100 hover:text-white">Manage Users</a>
+          <a href="/cpsproject/admin/users" class="text-red-100 hover:text-white">Users</a>
+          <a href="/cpsproject/admin/categories" class="text-red-100 hover:text-white">Categories</a>
+          <a href="/cpsproject/admin/pathways" class="text-red-100 hover:text-white">Pathways</a>
+          <a href="/cpsproject/admin/questions" class="text-red-100 hover:text-white">Questions</a>
           <a href="/cpsproject" class="text-red-200 hover:text-red-100 text-sm">← Back to Site</a>
         </div>
       </div>
@@ -73,7 +76,10 @@ if (class_exists('\\core\\Auth')) {
   <div id="admin-mobile-menu" class="md:hidden hidden border-t border-red-700">
     <div class="px-2 py-3 space-y-1">
       <a href="/cpsproject/admin" class="block px-3 py-2 rounded-md text-base font-medium text-red-100 hover:bg-red-700">Dashboard</a>
-      <a href="/cpsproject/admin/users" class="block px-3 py-2 rounded-md text-base font-medium text-red-100 hover:bg-red-700">Manage Users</a>
+      <a href="/cpsproject/admin/users" class="block px-3 py-2 rounded-md text-base font-medium text-red-100 hover:bg-red-700">Users</a>
+      <a href="/cpsproject/admin/categories" class="block px-3 py-2 rounded-md text-base font-medium text-red-100 hover:bg-red-700">Categories</a>
+      <a href="/cpsproject/admin/pathways" class="block px-3 py-2 rounded-md text-base font-medium text-red-100 hover:bg-red-700">Pathways</a>
+      <a href="/cpsproject/admin/questions" class="block px-3 py-2 rounded-md text-base font-medium text-red-100 hover:bg-red-700">Questions</a>
       <a href="/cpsproject" class="block px-3 py-2 rounded-md text-base font-medium text-red-200 hover:bg-red-700">← Back to Site</a>
       <?php if ($isLogged): ?>
         <a href="/cpsproject/logout" class="block px-3 py-2 rounded-md text-base font-medium text-white bg-red-600">Logout</a>

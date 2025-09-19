@@ -97,6 +97,20 @@ $router->add('assessment/results/{id:\d+}', ['controller' => 'AssessmentControll
 $router->add('assessment/pathways/{id:\d+}', ['controller' => 'AssessmentController', 'action' => 'getPathways']);
 
 
+// File: Updated routes to add to index.php (add these to your existing routes)
+
+// Existing routes remain the same...
+
+// Add these new admin routes for question management:
+$router->add('admin/questions', ['controller' => 'AdminController', 'action' => 'questions']);
+$router->add('admin/questions/create', ['controller' => 'AdminController', 'action' => 'createQuestion']);
+$router->add('admin/questions/{id:\d+}/edit', ['controller' => 'AdminController', 'action' => 'editQuestion']);
+$router->add('admin/questions/{id:\d+}/delete', ['controller' => 'AdminController', 'action' => 'deleteQuestion']);
+$router->add('admin/pathways/{id:\d+}/questions', ['controller' => 'AdminController', 'action' => 'pathwayQuestions']);
+
+// Updated admin navbar to include questions link
+
+
 // The HomeController class has been moved to its own file: controllers/HomeController.php
 // Dispatch the request
 $router->dispatch($requestUri);
