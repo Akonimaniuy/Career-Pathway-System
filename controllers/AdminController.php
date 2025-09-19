@@ -9,6 +9,7 @@ use core\CSRF;
 use models\UserModel;
 use models\CategoryModel;
 use models\PathwayModel;
+use \Exception;
 
 class AdminController extends Controller
 {

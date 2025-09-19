@@ -9,6 +9,7 @@ use core\CSRF;
 use models\CategoryModel;
 use models\PathwayModel;
 use models\AssessmentModel;
+use \Exception;
 
 class AssessmentController extends Controller
 {
