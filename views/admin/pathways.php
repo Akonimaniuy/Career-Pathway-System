@@ -1,5 +1,5 @@
 <?php
-// File: views/admin/pathways.php
+// File: views/admin/pathways.php - Complete Version
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -24,6 +24,12 @@
       <?php if (isset($_GET['success'])): ?>
         <div class="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded">
           Pathway action completed successfully.
+        </div>
+      <?php endif; ?>
+
+      <?php if (!empty($error)): ?>
+        <div class="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+          <?php echo htmlentities($error, ENT_QUOTES, 'UTF-8'); ?>
         </div>
       <?php endif; ?>
 
@@ -56,6 +62,7 @@
                    class="text-blue-600 hover:text-blue-900">Edit</a>
                 <form method="POST" action="/cpsproject/admin/pathways/<?php echo $pathway['id']; ?>/delete" 
                       class="inline" onsubmit="return confirm('Delete this pathway?')">
+                  <?php echo \core\CSRF::inputField(); ?>
                   <button type="submit" class="text-red-600 hover:text-red-900">Delete</button>
                 </form>
               </td>

@@ -1,5 +1,5 @@
 <?php
-// File: models/QuestionModel.php (New model for managing assessment questions)
+// File: models/QuestionModel.php - Complete Version
 namespace models;
 
 use core\Model;
@@ -156,15 +156,20 @@ class QuestionModel extends Model
 
     public function getQuestionStats()
     {
-        $stmt = $this->db->query("
-            SELECT 
-                p.name as pathway_name,
-                COUNT(q.id) as question_count,
-                AVG(CASE WHEN q.difficulty_level = 'easy' THEN 1 WHEN q.difficulty_level = 'medium' THEN 2 ELSE 3 END) as avg_difficulty
-            FROM pathways p 
-            LEFT JOIN assessment_questions q ON p.id = q.pathway_id 
-            GROUP BY p.id, p.name
-        ");
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        try {
+            $stmt = $this->db->query("
+                SELECT 
+                    p.id as pathway_id,
+                    p.name as pathway_name,
+                    COUNT(q.id) as question_count
+                FROM pathways p 
+                LEFT JOIN assessment_questions q ON p.id = q.pathway_id 
+                GROUP BY p.id, p.name
+                ORDER BY p.name ASC
+            ");
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (\Exception $e) {
+            return [];
+        }
     }
 }

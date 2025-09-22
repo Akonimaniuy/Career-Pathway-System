@@ -1,5 +1,5 @@
 <?php
-// File: views/admin/create_question.php
+// File: views/admin/create_question.php - Complete Version
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -30,12 +30,13 @@
           <select name="pathway_id" required
                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500">
             <option value="">Select a pathway...</option>
-            <?php foreach ($pathways as $pathway): ?>
-              <option value="<?php echo $pathway['id']; ?>" 
-                      <?php echo ($selectedPathway == $pathway['id']) ? 'selected' : ''; ?>>
-                <?php echo htmlentities($pathway['category_name'] . ' - ' . $pathway['name'], ENT_QUOTES, 'UTF-8'); ?>
-              </option>
-            <?php endforeach; ?>
+            <?php if (isset($pathways) && is_array($pathways)): ?>
+              <?php foreach ($pathways as $pathway): ?>
+                <option value="<?php echo $pathway['id']; ?>" <?php echo (isset($selectedPathway) && $selectedPathway == $pathway['id']) ? 'selected' : ''; ?>>
+                  <?php echo htmlentities(($pathway['category_name'] ?? 'Category') . ' - ' . $pathway['name'], ENT_QUOTES, 'UTF-8'); ?>
+                </option>
+              <?php endforeach; ?>
+            <?php endif; ?>
           </select>
         </div>
 
@@ -52,7 +53,6 @@
             <select name="question_type"
                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500">
               <option value="multiple_choice">Multiple Choice</option>
-              <option value="true_false">True/False</option>
             </select>
           </div>
 

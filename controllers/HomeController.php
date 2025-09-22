@@ -1,64 +1,69 @@
 <?php
+// filepath: c:\wamp64\www\cpsproject\controllers\HomeController.php
 namespace controllers;
-
 
 use core\Controller;
 use core\Session;
 use core\Auth;
-use core\Debug;
-
+use models\CareerPathModel;
+use models\PostModel;
 
 class HomeController extends Controller
 {
-
     protected $auth;
 
     public function __construct($params = [])
     {
         parent::__construct($params);
-
-        // ensure session started (index.php should already start it; this is safe)
-        
+        Session::start();
+        $this->auth = new Auth();
     }
-    
+
+    /**
+     * Home page with featured content
+     */
     public function index()
     {
-       
-        $data = [
-            'title' => 'Welcome to wow',
-            'message' => 'This is a simple PHP MVC framework without .htaccess'
-            
-        ];
-        
-        $this->render('index', $data);
+        $careerPathModel = new CareerPathModel();
+        $postModel = new PostModel();
+
+        // Get featured content
+        $featuredCareerPaths = $careerPathModel->getFeatured(6);
+        $featuredPosts = $postModel->getFeatured(3);
+
+        // Get user's career interests if logged in
+        $userCareerInterests = [];
+        if ($this->auth->check()) {
+            $userModel = new \models\UserModel();
+            $userCareerInterests = $userModel->getUserCareerInterests($this->auth->id());
+        }
+
+        $this->render('index', [
+            'title' => 'Welcome to Career Path System',
+            'featuredCareerPaths' => $featuredCareerPaths,
+            'featuredPosts' => $featuredPosts,
+            'userCareerInterests' => $userCareerInterests,
+            'isLoggedIn' => $this->auth->check()
+        ]);
     }
 
+    /**
+     * About page
+     */
     public function about()
     {
-        $data = [
-            'title' => 'About HopWeb',
-            'message' => 'Learn more about our simple MVC framework'
-        ];
-        
-        $this->render('about', $data);
+        $this->render('about', [
+            'title' => 'About Us'
+        ]);
     }
-    public function pathway()
+
+    /**
+     * Contact page
+     */
+    public function contact()
     {
-        $data = [
-            'title' => 'Explore Pathways',
-            'message' => 'Discover career pathways that match your interests and skills. Browse the cards to learn more about each field and explore opportunities.'
-        ];
-        
-        $this->render('pathway', $data);
-    }
-    
-    public function assessment()
-    {
-        $data = [
-            'title' => 'Assessment',
-            'message' => 'Take assessments to find suitable career paths'
-        ];
-        
-        $this->render('assessment', $data);
+        $this->render('contact', [
+            'title' => 'Contact Us'
+        ]);
     }
 }

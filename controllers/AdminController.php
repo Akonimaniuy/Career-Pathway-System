@@ -1,5 +1,5 @@
 <?php
-// File: controllers/AdminController.php (Updated for existing database)
+// File: controllers/AdminController.php - Corrected Complete Version
 namespace controllers;
 
 use core\Controller;
@@ -57,7 +57,13 @@ class AdminController extends Controller
             $stats = $this->getAdminStats();
             $this->render('index', ['title' => 'Admin Dashboard', 'stats' => $stats]);
         } catch (Exception $e) {
-            $stats = ['total_users' => 0, 'admin_users' => 0, 'recent_registrations' => 0, 'total_pathways' => 0, 'total_categories' => 0];
+            $stats = [
+                'total_users' => 0,
+                'admin_users' => 0,
+                'recent_registrations' => 0,
+                'total_pathways' => 0,
+                'total_categories' => 0
+            ];
             $this->render('index', ['title' => 'Admin Dashboard', 'stats' => $stats]);
         }
     }
@@ -211,6 +217,11 @@ class AdminController extends Controller
             exit();
         }
 
+        if (!isset($_POST[CSRF::FIELD]) || !CSRF::validate($_POST[CSRF::FIELD])) {
+            header('Location: /cpsproject/admin/categories?error=invalid_token');
+            exit();
+        }
+
         try {
             $this->categoryModel->deleteCategory($id);
             header('Location: /cpsproject/admin/categories?success=category_deleted');
@@ -323,6 +334,11 @@ class AdminController extends Controller
             exit();
         }
 
+        if (!isset($_POST[CSRF::FIELD]) || !CSRF::validate($_POST[CSRF::FIELD])) {
+            header('Location: /cpsproject/admin/pathways?error=invalid_token');
+            exit();
+        }
+
         try {
             $this->pathwayModel->deletePathway($id);
             header('Location: /cpsproject/admin/pathways?success=pathway_deleted');
@@ -348,30 +364,6 @@ class AdminController extends Controller
                 'title' => 'Manage Assessment Questions', 
                 'pathways' => [],
                 'questionStats' => [],
-                'error' => 'Unable to load questions'
-            ]);
-        }
-    }
-
-    public function pathwayQuestions($pathwayId)
-    {
-        try {
-            $pathway = $this->pathwayModel->getPathwayById($pathwayId);
-            if (!$pathway) {
-                echo "Pathway not found";
-                return;
-            }
-            
-            $questions = $this->questionModel->getQuestionsByPathway($pathwayId);
-            $this->render('pathway_questions', [
-                'title' => 'Questions for ' . $pathway['name'],
-                'pathway' => $pathway,
-                'questions' => $questions
-            ]);
-        } catch (Exception $e) {
-            $this->render('pathway_questions', [
-                'title' => 'Pathway Questions', 
-                'questions' => [], 
                 'error' => 'Unable to load questions'
             ]);
         }
@@ -552,6 +544,11 @@ class AdminController extends Controller
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header('Location: /cpsproject/admin/questions');
+            exit();
+        }
+
+        if (!isset($_POST[CSRF::FIELD]) || !CSRF::validate($_POST[CSRF::FIELD])) {
+            header('Location: /cpsproject/admin/questions?error=invalid_token');
             exit();
         }
 

@@ -328,4 +328,3 @@ class AssessmentModel extends Model
         return $selectedPathways[0]; // Return first pathway with max weight
     }
 }
-
