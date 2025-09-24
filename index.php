@@ -3,8 +3,8 @@
 
 // Define constants first (before any includes)
 define('APP_PATH', __DIR__);
-define('APP_DEBUG', true);
-define('DEBUG_SHOW_TOOLBAR', true);
+define('APP_DEBUG', true); // Keep debug mode on
+define('DEBUG_SHOW_TOOLBAR', false); // Set this to false to hide the toolbar
 define('DEBUG_LOG_PATH', APP_PATH . '/storage/debug.log');
 define('DEBUG_ALLOW_IPS', ''); // Empty means allow all IPs in debug mode
 
@@ -28,23 +28,15 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
 // Include database configuration
-require_once 'database.php';
+require_once 'config/database.php';
 
 // Initialize debug system
 require_once 'core/Debug.php';
 \core\Debug::init();
 \core\Debug::startOutputBuffer();
-
-// Autoloader function for namespaced classes
-spl_autoload_register(function ($class) {
-    $file = str_replace('\\', DIRECTORY_SEPARATOR, $class) . '.php';
-    if (file_exists($file)) {
-        require $file;
-    }
-});
-
-// Include the Router class
-require_once 'core/Router.php';
+ 
+// Use Composer's autoloader
+require_once APP_PATH . '/vendor/autoload.php';
 
 // Create router instance
 $router = new core\Router();
@@ -142,6 +134,8 @@ $router->add('admin/pathways/{id:\d+}/delete', ['controller' => 'AdminController
 $router->add('admin/questions', ['controller' => 'AdminController', 'action' => 'questions']);
 $router->add('admin/questions/create', ['controller' => 'AdminController', 'action' => 'createQuestion']);
 $router->add('admin/questions/{id:\d+}/edit', ['controller' => 'AdminController', 'action' => 'editQuestion']);
+$router->add('admin/questions/bulk-import', ['controller' => 'AdminController', 'action' => 'bulkImport']);
+$router->add('admin/questions/download-template', ['controller' => 'UploadController', 'action' => 'downloadTemplate']);
 $router->add('admin/questions/{id:\d+}/delete', ['controller' => 'AdminController', 'action' => 'deleteQuestion']);
 
 // AJAX endpoint for pathways by category

@@ -85,7 +85,7 @@
           pathwayContainer.innerHTML = '<div class="col-span-full text-center py-4">Loading pathways...</div>';
           
           // Fetch pathways for this category
-          fetch('/cpsproject/assessment/pathways/' + categoryId)
+          fetch('/cpsproject/assessment/pathways-by-category/' + categoryId)
             .then(response => response.json())
             .then(data => {
               pathwayContainer.innerHTML = '';
@@ -128,6 +128,3 @@
   </script>
 </body>
 </html>
-
-
-

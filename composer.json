@@ -1,0 +1,16 @@
+{
+    "name": "cps/project",
+    "description": "Career Path System",
+    "type": "project",
+    "require": {
+        "php": ">=7.4.33",
+        "phpoffice/phpspreadsheet": "^1.29"
+    },
+    "autoload": {
+        "psr-4": {
+            "core\\": "core/",
+            "controllers\\": "controllers/",
+            "models\\": "models/"
+        }
+    }
+}

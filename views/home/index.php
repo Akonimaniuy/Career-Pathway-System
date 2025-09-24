@@ -10,61 +10,29 @@
 <body>
   <?php include __DIR__ . '/../layout/navbar.php'; ?>
 <div class="hero">
-    <h1>Your Future, Unlocked.</h1>
+    <h1><?php echo htmlspecialchars($title ?? 'Your Future, Unlocked.'); ?></h1>
     <div class="carousel" mask>
-        <article>
-            <img src="public/images/agri.jpg" alt="">
-            <h2><?php echo $data['title'];?></h2>
-            <div>
-                <p><?php echo $data['message'];?></p>
-                <a href="#">Explore</a>
-            </div>
-        </article>
-        <article>
-            <img src="public/images/cookery.jpg" alt="">
-            <h2>Cookery</h2>
-            <div>
-                <p>Cookery is the art and practice of preparing, cooking, and presenting food. It involves mastering culinary techniques, ensuring food safety, and creating meals that are both nutritious and appealing. A career in cookery can lead to opportunities as a chef, baker, or food entrepreneur in restaurants, hotels, catering services, and other parts of the hospitality industry.</p>
-
-                <a href="#">Explore</a>
-            </div>
-        </article>
-        <article>
-            <img src="public/images/ict.jpg" alt="">
-            <h2>ICT</h2>
-            <div>
-                <p>ICT focuses on the use of technology to manage, process, and share information. It covers computer systems, networks, software, and digital communication tools that are essential in today’s industries. A career in ICT can lead to roles such as software developer, network administrator, IT support specialist, or web designer.</p>
-
-                <a href="#">Explore</a>
-            </div>
-        </article>
-        <article>
-            <img src="public/images/electrical.jpg" alt="">
-            <h2>Electrical</h2>
-            <div>
-                <p>Electrical focuses on the study and application of electricity, electronics, and power systems. It involves installing, maintaining, and repairing electrical wiring, equipment, and machinery. Careers in this field include electricians, electrical technicians, and engineers who work in construction, manufacturing, and energy industries.</p>
-
-                <a href="#">Explore</a>
-            </div>
-        </article>
-        <article>
-            <img src="public/images/smaw.jpg" alt="">
-            <h2>SMAW</h2>
-            <div>
-                <p>SMAW (Welding) involves joining metals using an electric arc and coated electrodes. It is widely used in construction, manufacturing, and repair industries. Careers in this field include welders, fabricators, and metalworkers who build and maintain metal structures, pipelines, and machinery.</p>
-
-                <a href="#">Explore</a>
-            </div>
-        </article>
-        <article>
-            <img src="public/images/smaw.jpg" alt="">
-            <h2>GUKO</h2>
-            <div>
-                <p>SMAW (Welding) involves joining metals using an electric arc and coated electrodes. It is widely used in construction, manufacturing, and repair industries. Careers in this field include welders, fabricators, and metalworkers who build and maintain metal structures, pipelines, and machinery.</p>
-
-                <a href="#">Explore</a>
-            </div>
-        </article>
+        <?php if (!empty($featuredPaths)): ?>
+            <?php foreach ($featuredPaths as $path): ?>
+                <article class="bg-white rounded-xl shadow-lg overflow-hidden">
+                    <div class="relative">
+                        <img src="<?php echo htmlspecialchars($path['image_url'] ?: 'public/images/default-pathway.jpg'); ?>" 
+                             alt="<?php echo htmlspecialchars($path['name']); ?>" 
+                             class="w-full h-48 object-cover">
+                        <div class="absolute top-3 left-3">
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                <?php echo htmlspecialchars($path['category_name'] ?? 'Category'); ?>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-xl font-bold text-gray-900 mb-3 h-14 overflow-hidden"><?php echo htmlspecialchars($path['name']); ?></h3>
+                        <p class="text-gray-600 text-sm mb-4 h-20 overflow-hidden"><?php echo htmlspecialchars($path['description'] ?? 'Explore this exciting career pathway.'); ?></p>
+                        <a href="/cpsproject/career-path/<?php echo $path['id']; ?>" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">Learn More</a>
+                    </div>
+                </article>
+            <?php endforeach; ?>
+        <?php endif; ?>
     </div>
 
     

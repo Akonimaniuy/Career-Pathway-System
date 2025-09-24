@@ -43,7 +43,7 @@ if (class_exists('\\core\\Auth')) {
           <a href="/cpsproject" class="text-gray-600 hover:text-gray-900">Home</a>
           <a href="/cpsproject/users" class="text-gray-600 hover:text-gray-900">Users</a>
           <a href="/cpsproject/about" class="text-gray-600 hover:text-gray-900">About</a>
-          <a href="/cpsproject/pathway" class="text-gray-600 hover:text-gray-900">Pathways</a>
+          <a href="/cpsproject/career-paths" class="text-gray-600 hover:text-gray-900">Pathways</a>
           <a href="/cpsproject/assessment" class="text-gray-600 hover:text-gray-900">Assessment</a>
           <?php if ($isAdmin): ?>
             <a href="/cpsproject/admin" class="text-red-600 hover:text-red-700 font-medium">Admin</a>
@@ -79,7 +79,7 @@ if (class_exists('\\core\\Auth')) {
       <a href="/cpsproject" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50">Home</a>
       <a href="/cpsproject/users" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50">Users</a>
       <a href="/cpsproject/about" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50">About</a>
-      <a href="/cpsproject/pathway" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50">Pathways</a>
+      <a href="/cpsproject/career-paths" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50">Pathways</a>
       <a href="/cpsproject/assessment" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50">Assessment</a>
       <?php if ($isAdmin): ?>
         <a href="/cpsproject/admin" class="block px-3 py-2 rounded-md text-base font-medium text-red-600 hover:bg-red-50">Admin Panel</a>

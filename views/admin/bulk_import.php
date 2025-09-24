@@ -104,9 +104,20 @@
   <script>
     let previewData = null;
 
+    // Helper function for fetch with timeout
+    function fetchWithTimeout(url, options, timeout = 60000) { // Default to 60 seconds (60000 ms)
+      return Promise.race([
+        fetch(url, options),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Request timed out')), timeout)
+        )
+      ]);
+    }
+
     function previewQuestions() {
       const form = document.getElementById('upload-form');
       const formData = new FormData(form);
+      const previewButton = form.querySelector('button[onclick="previewQuestions()"]');
       
       if (!formData.get('pathway_id') || !formData.get('template').name) {
         alert('Please select a pathway and upload a file.');
@@ -114,15 +125,14 @@
       }
 
       document.getElementById('loading').classList.remove('hidden');
+      if (previewButton) previewButton.disabled = true; // Disable button during processing
 
-      fetch('/cpsproject/upload/preview-questions', {
+      fetchWithTimeout('/cpsproject/upload/preview-questions', {
         method: 'POST',
         body: formData
       })
       .then(response => response.json())
       .then(data => {
-        document.getElementById('loading').classList.add('hidden');
-        
         if (data.success) {
           previewData = data;
           showPreview(data);
@@ -130,9 +140,16 @@
           alert('Error: ' + data.error);
         }
       })
-      .catch(error => {
+      .catch(error => { // Catch network errors or errors from the .then block
+        console.error('Preview error:', error); // Log error to console for debugging
+        alert('Error during preview: ' + error.message + '. Please check server logs if this persists.');
+      })
+      .finally(() => { // Always run, regardless of success or failure
         document.getElementById('loading').classList.add('hidden');
-        alert('Error: ' + error.message);
+        if (previewButton) previewButton.disabled = false; // Re-enable button
+      })
+      .catch(error => {
+        // This catch is intentionally left empty as the previous .catch handles errors.
       });
     }
 
@@ -201,7 +218,12 @@
     function importQuestions() {
       if (!previewData) return;
 
+      const importButton = document.querySelector('#preview-modal button[onclick="importQuestions()"]');
+      const cancelButton = document.querySelector('#preview-modal button[onclick="closePreview()"]');
+
       document.getElementById('loading').classList.remove('hidden');
+      if (importButton) importButton.disabled = true; // Disable buttons before hiding modal
+      if (cancelButton) cancelButton.disabled = true;
       closePreview();
 
       const form = document.getElementById('upload-form');
@@ -210,27 +232,36 @@
       formData.append('pathway_id', form.querySelector('select[name="pathway_id"]').value);
       formData.append('questions_data', JSON.stringify(previewData.questions));
 
-      fetch('/cpsproject/admin/questions/bulk-import', {
+      fetchWithTimeout('/cpsproject/admin/questions/bulk-import', {
         method: 'POST',
         body: formData
       })
       .then(response => response.json())
       .then(data => {
-        document.getElementById('loading').classList.add('hidden');
-        
         if (data.success) {
           alert(`Successfully imported ${data.imported} out of ${data.total} questions.`);
           if (data.errors && data.errors.length > 0) {
             alert('Some errors occurred:\n' + data.errors.join('\n'));
           }
+          // Redirect only on successful import
           window.location.href = '/cpsproject/admin/questions?success=bulk_import';
+        } else if (data.error) { // Specific error message from backend
+          alert('Error during import: ' + data.error);
+        } else if (data.message) { // Generic message from backend
+          alert('Import failed: ' + data.message);
         } else {
-          alert('Error: ' + data.error);
+          alert('An unknown error occurred during import.');
         }
       })
       .catch(error => {
         document.getElementById('loading').classList.add('hidden');
-        alert('Error: ' + error.message);
+        console.error('Import error:', error); // Log error to console for debugging
+        alert('Error during import: ' + error.message + '. Please check server logs if this persists.');
+      })
+      .finally(() => {
+        document.getElementById('loading').classList.add('hidden');
+        // Buttons are part of the modal, which is hidden by closePreview(),
+        // so no need to re-enable them here.
       });
     }
   </script>

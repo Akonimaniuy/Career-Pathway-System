@@ -1,6 +1,3 @@
-<?php
-// File: views/admin/create_pathway.php - Complete Version
-?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -17,55 +14,45 @@
       <h1 class="text-2xl font-bold text-gray-800 mb-6"><?php echo htmlentities($title, ENT_QUOTES, 'UTF-8'); ?></h1>
 
       <?php if (!empty($error)): ?>
-        <div class="mb-4 text-sm text-red-700 bg-red-50 border border-red-100 p-3 rounded">
-          <?php echo htmlentities($error, ENT_QUOTES, 'UTF-8'); ?>
+        <div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <p class="text-red-800"><?php echo htmlentities($error, ENT_QUOTES, 'UTF-8'); ?></p>
         </div>
       <?php endif; ?>
 
-      <form method="post" class="space-y-6">
+      <form method="post" action="/cpsproject/admin/pathways/create" enctype="multipart/form-data" class="space-y-6">
         <?php echo \core\CSRF::inputField(); ?>
-        
+
         <div>
-          <label class="block text-sm font-medium text-gray-700">Category</label>
-          <select name="category_id" required
+          <label for="name" class="block text-sm font-medium text-gray-700">Pathway Name</label>
+          <input type="text" id="name" name="name" required
+                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500">
+        </div>
+
+        <div>
+          <label for="category_id" class="block text-sm font-medium text-gray-700">Category</label>
+          <select id="category_id" name="category_id" required
                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500">
-            <option value="">Select a category...</option>
+            <option value="">Choose a category...</option>
             <?php foreach ($categories as $category): ?>
-              <option value="<?php echo $category['id']; ?>">
-                <?php echo htmlentities($category['name'], ENT_QUOTES, 'UTF-8'); ?>
-              </option>
+              <option value="<?php echo $category['id']; ?>"><?php echo htmlentities($category['name'], ENT_QUOTES, 'UTF-8'); ?></option>
             <?php endforeach; ?>
           </select>
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-gray-700">Pathway Name</label>
-          <input type="text" name="name" required
-                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                 placeholder="Enter pathway name">
+          <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
+          <textarea id="description" name="description" rows="4"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"></textarea>
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-gray-700">Description</label>
-          <textarea name="description" rows="4"
-                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Enter pathway description"></textarea>
+          <label for="pathway_image" class="block text-sm font-medium text-gray-700">Pathway Image</label>
+          <input type="file" id="pathway_image" name="pathway_image" accept="image/jpeg,image/png,image/gif"
+                 class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
         </div>
 
-        <div>
-          <label class="block text-sm font-medium text-gray-700">Image URL (optional)</label>
-          <input type="url" name="image_url"
-                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                 placeholder="https://example.com/image.jpg">
-        </div>
-
-        <div class="flex space-x-4">
-          <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
-            Create Pathway
-          </button>
-          <a href="/cpsproject/admin/pathways" class="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400">
-            Cancel
-          </a>
+        <div class="pt-4">
+          <button type="submit" class="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700">Create Pathway</button>
         </div>
       </form>
     </div>
