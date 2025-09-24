@@ -1,10 +1,11 @@
 <?php
-// File: models/QuestionModel.php - Complete Version
+// File: models/QuestionModel.php
 namespace models;
 
 use core\Model;
 use core\Database;
 use PDO;
+use Exception;
 
 class QuestionModel extends Model
 {
@@ -16,160 +17,149 @@ class QuestionModel extends Model
         $this->db = Database::getInstance()->getConnection();
     }
 
-    public function getQuestionsByPathway($pathwayId)
+    /**
+     * Get all questions with pathway and category names.
+     */
+    public function getAllQuestions()
     {
-        $stmt = $this->db->prepare("
-            SELECT q.*, p.name as pathway_name 
-            FROM assessment_questions q 
-            JOIN pathways p ON q.pathway_id = p.id 
-            WHERE q.pathway_id = :pathway_id 
-            ORDER BY q.difficulty_level ASC, q.id ASC
+        $stmt = $this->db->query("
+            SELECT 
+                q.id, 
+                q.question_text, 
+                q.difficulty_level, 
+                p.name as pathway_name, 
+                c.name as category_name,
+                q.pathway_id
+            FROM assessment_questions q
+            JOIN pathways p ON q.pathway_id = p.id
+            JOIN categories c ON p.category_id = c.id
+            ORDER BY c.name, p.name, q.id
         ");
-        $stmt->execute(['pathway_id' => $pathwayId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function getQuestionWithOptions($questionId)
+    /**
+     * Get question statistics.
+     */
+    public function getQuestionStats()
     {
-        $stmt = $this->db->prepare("
-            SELECT q.*, p.name as pathway_name 
-            FROM assessment_questions q 
-            JOIN pathways p ON q.pathway_id = p.id 
-            WHERE q.id = :id
+        $stmt = $this->db->query("
+            SELECT 
+                COUNT(*) as total,
+                SUM(CASE WHEN difficulty_level = 'easy' THEN 1 ELSE 0 END) as easy,
+                SUM(CASE WHEN difficulty_level = 'medium' THEN 1 ELSE 0 END) as medium,
+                SUM(CASE WHEN difficulty_level = 'hard' THEN 1 ELSE 0 END) as hard
+            FROM assessment_questions
         ");
-        $stmt->execute(['id' => $questionId]);
-        $question = $stmt->fetch(PDO::FETCH_ASSOC);
-        
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Get a single question with its options.
+     */
+    public function getQuestionWithOptions($id)
+    {
+        $questionStmt = $this->db->prepare("SELECT * FROM assessment_questions WHERE id = :id");
+        $questionStmt->execute(['id' => $id]);
+        $question = $questionStmt->fetch(PDO::FETCH_ASSOC);
+
         if ($question) {
-            $stmt = $this->db->prepare("
-                SELECT * FROM answer_options 
-                WHERE question_id = :question_id 
-                ORDER BY id ASC
-            ");
-            $stmt->execute(['question_id' => $questionId]);
-            $question['options'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $optionsStmt = $this->db->prepare("SELECT * FROM answer_options WHERE question_id = :question_id ORDER BY id");
+            $optionsStmt->execute(['question_id' => $id]);
+            $question['options'] = $optionsStmt->fetchAll(PDO::FETCH_ASSOC);
         }
-        
+
         return $question;
     }
 
+    /**
+     * Create a new question and its options.
+     */
     public function createQuestion($data)
     {
         $this->db->beginTransaction();
-        
         try {
-            // Create question
             $stmt = $this->db->prepare("
-                INSERT INTO assessment_questions (pathway_id, question_text, question_type, difficulty_level) 
+                INSERT INTO assessment_questions (pathway_id, question_text, question_type, difficulty_level)
                 VALUES (:pathway_id, :question_text, :question_type, :difficulty_level)
             ");
             $stmt->execute([
                 'pathway_id' => $data['pathway_id'],
                 'question_text' => $data['question_text'],
-                'question_type' => $data['question_type'] ?? 'multiple_choice',
-                'difficulty_level' => $data['difficulty_level'] ?? 'medium'
+                'question_type' => $data['question_type'],
+                'difficulty_level' => $data['difficulty_level']
             ]);
-            
             $questionId = $this->db->lastInsertId();
-            
-            // Add options if provided
-            if (!empty($data['options'])) {
-                $stmt = $this->db->prepare("
-                    INSERT INTO answer_options (question_id, option_text, is_correct) 
-                    VALUES (:question_id, :option_text, :is_correct)
-                ");
-                
-                foreach ($data['options'] as $option) {
-                    $stmt->execute([
-                        'question_id' => $questionId,
-                        'option_text' => $option['text'],
-                        'is_correct' => $option['is_correct'] ? 1 : 0
-                    ]);
-                }
+
+            $optionStmt = $this->db->prepare("
+                INSERT INTO answer_options (question_id, option_text, is_correct)
+                VALUES (:question_id, :option_text, :is_correct)
+            ");
+            foreach ($data['options'] as $option) {
+                $optionStmt->execute([
+                    'question_id' => $questionId,
+                    'option_text' => $option['text'],
+                    'is_correct' => $option['is_correct'] ? 1 : 0
+                ]);
             }
-            
+
             $this->db->commit();
             return $questionId;
-            
-        } catch (\Exception $e) {
-            $this->db->rollback();
+        } catch (Exception $e) {
+            $this->db->rollBack();
             throw $e;
         }
     }
 
-    public function updateQuestion($questionId, $data)
+    /**
+     * Update an existing question and its options.
+     */
+    public function updateQuestion($id, $data)
     {
         $this->db->beginTransaction();
-        
         try {
-            // Update question
             $stmt = $this->db->prepare("
                 UPDATE assessment_questions 
-                SET question_text = :question_text, 
-                    question_type = :question_type, 
-                    difficulty_level = :difficulty_level 
+                SET question_text = :question_text, question_type = :question_type, difficulty_level = :difficulty_level
                 WHERE id = :id
             ");
             $stmt->execute([
+                'id' => $id,
                 'question_text' => $data['question_text'],
                 'question_type' => $data['question_type'],
-                'difficulty_level' => $data['difficulty_level'],
-                'id' => $questionId
+                'difficulty_level' => $data['difficulty_level']
             ]);
-            
-            // Update options if provided
-            if (!empty($data['options'])) {
-                // Delete existing options
-                $stmt = $this->db->prepare("DELETE FROM answer_options WHERE question_id = :question_id");
-                $stmt->execute(['question_id' => $questionId]);
-                
-                // Add new options
-                $stmt = $this->db->prepare("
-                    INSERT INTO answer_options (question_id, option_text, is_correct) 
-                    VALUES (:question_id, :option_text, :is_correct)
-                ");
-                
-                foreach ($data['options'] as $option) {
-                    $stmt->execute([
-                        'question_id' => $questionId,
-                        'option_text' => $option['text'],
-                        'is_correct' => $option['is_correct'] ? 1 : 0
-                    ]);
-                }
+
+            // Delete old options and insert new ones
+            $deleteStmt = $this->db->prepare("DELETE FROM answer_options WHERE question_id = :question_id");
+            $deleteStmt->execute(['question_id' => $id]);
+
+            $optionStmt = $this->db->prepare("
+                INSERT INTO answer_options (question_id, option_text, is_correct)
+                VALUES (:question_id, :option_text, :is_correct)
+            ");
+            foreach ($data['options'] as $option) {
+                $optionStmt->execute([
+                    'question_id' => $id,
+                    'option_text' => $option['text'],
+                    'is_correct' => $option['is_correct'] ? 1 : 0
+                ]);
             }
-            
+
             $this->db->commit();
             return true;
-            
-        } catch (\Exception $e) {
-            $this->db->rollback();
+        } catch (Exception $e) {
+            $this->db->rollBack();
             throw $e;
         }
     }
 
-    public function deleteQuestion($questionId)
+    /**
+     * Delete a question and its options.
+     */
+    public function deleteQuestion($id)
     {
-        // Options will be deleted automatically due to CASCADE
         $stmt = $this->db->prepare("DELETE FROM assessment_questions WHERE id = :id");
-        return $stmt->execute(['id' => $questionId]);
-    }
-
-    public function getQuestionStats()
-    {
-        try {
-            $stmt = $this->db->query("
-                SELECT 
-                    p.id as pathway_id,
-                    p.name as pathway_name,
-                    COUNT(q.id) as question_count
-                FROM pathways p 
-                LEFT JOIN assessment_questions q ON p.id = q.pathway_id 
-                GROUP BY p.id, p.name
-                ORDER BY p.name ASC
-            ");
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (\Exception $e) {
-            return [];
-        }
+        return $stmt->execute(['id' => $id]);
     }
 }

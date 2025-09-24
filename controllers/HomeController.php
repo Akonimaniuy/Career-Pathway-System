@@ -11,12 +11,16 @@ use models\PostModel;
 class HomeController extends Controller
 {
     protected $auth;
+    protected $careerPathModel;
+    protected $postModel;
 
     public function __construct($params = [])
     {
         parent::__construct($params);
         Session::start();
         $this->auth = new Auth();
+        $this->careerPathModel = new CareerPathModel();
+        $this->postModel = new PostModel();
     }
 
     /**
@@ -24,12 +28,9 @@ class HomeController extends Controller
      */
     public function index()
     {
-        $careerPathModel = new CareerPathModel();
-        $postModel = new PostModel();
-
         // Get featured content
-        $featuredCareerPaths = $careerPathModel->getFeatured(6);
-        $featuredPosts = $postModel->getFeatured(3);
+        $featuredCareerPaths = $this->careerPathModel->getFeatured(6);
+        $featuredPosts = $this->postModel->getFeatured(3);
 
         // Get user's career interests if logged in
         $userCareerInterests = [];
@@ -40,7 +41,7 @@ class HomeController extends Controller
 
         $this->render('index', [
             'title' => 'Welcome to Career Path System',
-            'featuredCareerPaths' => $featuredCareerPaths,
+            'featuredPaths' => $featuredCareerPaths,
             'featuredPosts' => $featuredPosts,
             'userCareerInterests' => $userCareerInterests,
             'isLoggedIn' => $this->auth->check()

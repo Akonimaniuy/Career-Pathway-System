@@ -307,11 +307,11 @@ class UserModel extends Model
     public function getUserCareerInterests($userId)
     {
         $stmt = $this->db->prepare("
-            SELECT uci.*, cp.title, cp.description, cp.industry, cp.salary_range
+            SELECT uci.*, p.name as title, p.description
             FROM user_career_interests uci
-            JOIN career_paths cp ON uci.career_path_id = cp.id
+            JOIN pathways p ON uci.career_path_id = p.id
             WHERE uci.user_id = :user_id
-            ORDER BY uci.interest_level DESC, cp.title ASC
+            ORDER BY uci.interest_level DESC, p.name ASC
         ");
         $stmt->execute(['user_id' => $userId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -350,5 +350,46 @@ class UserModel extends Model
             'user_id' => $userId,
             'career_path_id' => $careerPathId
         ]);
+    }
+
+    /**
+     * Get total number of users
+     */
+    public function getUserCount()
+    {
+        $stmt = $this->db->query("SELECT COUNT(*) as count FROM users");
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $result['count'] ?? 0;
+    }
+
+    /**
+     * Get total number of admin users
+     */
+    public function getAdminCount()
+    {
+        $stmt = $this->db->query("SELECT COUNT(*) as count FROM users WHERE role = 'admin'");
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $result['count'] ?? 0;
+    }
+
+    /**
+     * Get recent user registrations
+     */
+    public function getRecentRegistrations($days = 7)
+    {
+        $stmt = $this->db->prepare("
+            SELECT COUNT(*) as count 
+            FROM users 
+            WHERE created_at >= DATE_SUB(NOW(), INTERVAL :days DAY)
+        ");
+        $stmt->execute(['days' => $days]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $result['count'] ?? 0;
+    }
+
+    public function getAllUsersWithRole()
+    {
+        $stmt = $this->db->query("SELECT id, name, email, role, status, created_at FROM users ORDER BY created_at DESC");
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }

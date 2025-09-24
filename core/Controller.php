@@ -14,12 +14,17 @@ class Controller
     {
         extract($data);
         
-        $controller = get_class($this);
-        $controller = str_replace('controllers\\', '', $controller);
-        $controller = str_replace('Controller', '', $controller);
-        $controller = strtolower($controller);
-        
-        $viewFile = APP_PATH . "/views/$controller/$view.php";
+        if (strpos($view, '../') === 0) {
+            // Handle relative paths from the /views/ directory
+            $viewFile = APP_PATH . '/views/' . substr($view, 3) . '.php';
+        } else {
+            // Default behavior: look in controller-specific folder
+            $controller = get_class($this);
+            $controller = str_replace('controllers\\', '', $controller);
+            $controller = str_replace('Controller', '', $controller);
+            $controller = strtolower($controller);
+            $viewFile = APP_PATH . "/views/$controller/$view.php";
+        }
         
         if (file_exists($viewFile)) {
             require_once $viewFile;

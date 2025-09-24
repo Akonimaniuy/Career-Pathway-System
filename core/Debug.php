@@ -266,7 +266,7 @@ class Debug
     {
         $s = '';
         foreach (self::$logs as $l) {
-            $s .= '[' . date('Y-m-d H:i:s', $l['t']) . '] ' . $l['msg'] . ' ' . trim(print_r($l['ctx'], true)) . "\n";
+            $s .= '[' . date('Y-m-d H:i:s', (int)$l['t']) . '] ' . $l['msg'] . ' ' . trim(print_r($l['ctx'], true)) . "\n";
         }
         foreach (self::$queries as $q) {
             $s .= '[' . date('Y-m-d H:i:s', $q['t']) . '] SQL: ' . $q['sql'] . ' PARAMS: ' . json_encode($q['params']) . "\n";

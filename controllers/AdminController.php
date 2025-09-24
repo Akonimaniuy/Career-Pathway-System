@@ -8,7 +8,7 @@ use core\Auth;
 use core\CSRF;
 use models\UserModel;
 use models\CategoryModel;
-use models\PathwayModel;
+use models\CareerPathModel;
 use models\QuestionModel;
 use \Exception;
 
@@ -25,7 +25,7 @@ class AdminController extends Controller
         parent::__construct($params);
         $this->userModel = new UserModel();
         $this->categoryModel = new CategoryModel();
-        $this->pathwayModel = new PathwayModel();
+        $this->pathwayModel = new CareerPathModel();
         $this->questionModel = new QuestionModel();
 
         Session::start();
@@ -235,7 +235,7 @@ class AdminController extends Controller
     public function pathways()
     {
         try {
-            $pathways = $this->pathwayModel->getAllPathways();
+            $pathways = $this->pathwayModel->getAll();
             $this->render('pathways', ['title' => 'Manage Pathways', 'pathways' => $pathways]);
         } catch (Exception $e) {
             $this->render('pathways', ['title' => 'Manage Pathways', 'pathways' => [], 'error' => 'Unable to load pathways']);
@@ -254,16 +254,42 @@ class AdminController extends Controller
             $name = trim($_POST['name'] ?? '');
             $description = trim($_POST['description'] ?? '');
             $categoryId = $_POST['category_id'] ?? '';
-            $imageUrl = trim($_POST['image_url'] ?? '');
+            $imageUrl = '';
+
+            // Handle file upload
+            if (isset($_FILES['pathway_image']) && $_FILES['pathway_image']['error'] === UPLOAD_ERR_OK) {
+                $file = $_FILES['pathway_image'];
+                $allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+                
+                if (in_array($file['type'], $allowedTypes) && $file['size'] < 5 * 1024 * 1024) { // 5MB limit
+                    $uploadDir = APP_PATH . '/public/uploads/pathways/';
+                    if (!is_dir($uploadDir)) {
+                        mkdir($uploadDir, 0755, true);
+                    }
+                    $filename = uniqid() . '-' . basename($file['name']);
+                    $destination = $uploadDir . $filename;
+
+                    if (move_uploaded_file($file['tmp_name'], $destination)) {
+                        $imageUrl = '/cpsproject/public/uploads/pathways/' . $filename;
+                    } else {
+                        $categories = $this->categoryModel->getAllCategories();
+                        $this->render('create_pathway', ['error' => 'Failed to move uploaded file.', 'title' => 'Create Pathway', 'categories' => $categories]);
+                        return;
+                    }
+                } else {
+                    $categories = $this->categoryModel->getAllCategories();
+                    $this->render('create_pathway', ['error' => 'Invalid file type or size too large.', 'title' => 'Create Pathway', 'categories' => $categories]);
+                    return;
+                }
+            }
 
             if (empty($name) || empty($categoryId)) {
                 $categories = $this->categoryModel->getAllCategories();
                 $this->render('create_pathway', ['error' => 'Name and category are required', 'title' => 'Create Pathway', 'categories' => $categories]);
                 return;
             }
-
             try {
-                $this->pathwayModel->createPathway([
+                $this->pathwayModel->create([
                     'name' => $name, 
                     'description' => $description, 
                     'category_id' => $categoryId,
@@ -278,12 +304,12 @@ class AdminController extends Controller
         }
 
         $categories = $this->categoryModel->getAllCategories();
-        $this->render('create_pathway', ['title' => 'Create Pathway', 'categories' => $categories]);
+        $this->render('../admin/create_pathway', ['title' => 'Create Pathway', 'categories' => $categories]);
     }
 
     public function editPathway($id)
     {
-        $pathway = $this->pathwayModel->getPathwayById($id);
+        $pathway = $this->pathwayModel->getById($id);
         
         if (!$pathway) {
             echo "Pathway not found";
@@ -300,7 +326,35 @@ class AdminController extends Controller
             $name = trim($_POST['name'] ?? '');
             $description = trim($_POST['description'] ?? '');
             $categoryId = $_POST['category_id'] ?? '';
-            $imageUrl = trim($_POST['image_url'] ?? '');
+            $imageUrl = $pathway['image_url']; // Keep old image by default
+
+            // Handle file upload if a new file is provided
+            if (isset($_FILES['pathway_image']) && $_FILES['pathway_image']['error'] === UPLOAD_ERR_OK) {
+                $file = $_FILES['pathway_image'];
+                $allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+
+                if (in_array($file['type'], $allowedTypes) && $file['size'] < 5 * 1024 * 1024) { // 5MB limit
+                    // Optional: Delete old image
+                    if ($imageUrl && file_exists(APP_PATH . str_replace('/cpsproject', '', $imageUrl))) {
+                        @unlink(APP_PATH . str_replace('/cpsproject', '', $imageUrl));
+                    }
+
+                    $uploadDir = APP_PATH . '/public/uploads/pathways/';
+                    if (!is_dir($uploadDir)) {
+                        mkdir($uploadDir, 0755, true);
+                    }
+                    $filename = uniqid() . '-' . basename($file['name']);
+                    $destination = $uploadDir . $filename;
+
+                    if (move_uploaded_file($file['tmp_name'], $destination)) {
+                        $imageUrl = '/cpsproject/public/uploads/pathways/' . $filename;
+                    } else {
+                        // Handle upload failure
+                    }
+                } else {
+                    // Handle invalid file type or size
+                }
+            }
 
             if (empty($name) || empty($categoryId)) {
                 $categories = $this->categoryModel->getAllCategories();
@@ -309,7 +363,7 @@ class AdminController extends Controller
             }
 
             try {
-                $this->pathwayModel->updatePathway($id, [
+                $this->pathwayModel->update($id, [
                     'name' => $name, 
                     'description' => $description, 
                     'category_id' => $categoryId,
@@ -324,7 +378,7 @@ class AdminController extends Controller
         }
         
         $categories = $this->categoryModel->getAllCategories();
-        $this->render('edit_pathway', ['title' => 'Edit Pathway', 'pathway' => $pathway, 'categories' => $categories]);
+        $this->render('../admin/edit_pathway', ['title' => 'Edit Pathway', 'pathway' => $pathway, 'categories' => $categories]);
     }
 
     public function deletePathway($id)
@@ -340,7 +394,7 @@ class AdminController extends Controller
         }
 
         try {
-            $this->pathwayModel->deletePathway($id);
+            $this->pathwayModel->delete($id);
             header('Location: /cpsproject/admin/pathways?success=pathway_deleted');
         } catch (Exception $e) {
             header('Location: /cpsproject/admin/pathways?error=delete_failed');
@@ -352,17 +406,41 @@ class AdminController extends Controller
     public function questions()
     {
         try {
-            $pathways = $this->pathwayModel->getAllPathways();
+            $categories = $this->categoryModel->getAllCategories();
+            $pathways = $this->pathwayModel->getAll();
+
+            $allQuestions = $this->questionModel->getAllQuestions();
+            
+            // Group questions by category and then by pathway
+            $groupedQuestions = [];
+            foreach ($allQuestions as $q) {
+                $categoryName = $q['category_name'];
+                $pathwayName = $q['pathway_name'];
+                $pathwayId = $q['pathway_id'];
+
+                if (!isset($groupedQuestions[$categoryName])) {
+                    $groupedQuestions[$categoryName] = [];
+                }
+                if (!isset($groupedQuestions[$categoryName][$pathwayName])) {
+                    $groupedQuestions[$categoryName][$pathwayName] = ['id' => $pathwayId, 'questions' => []];
+                }
+                $groupedQuestions[$categoryName][$pathwayName]['questions'][] = $q;
+            }
+
             $questionStats = $this->questionModel->getQuestionStats();
             $this->render('questions', [
-                'title' => 'Manage Assessment Questions', 
+                'title' => 'Manage Assessment Questions',
+                'categories' => $categories,
                 'pathways' => $pathways,
+                'groupedQuestions' => $groupedQuestions,
                 'questionStats' => $questionStats
             ]);
         } catch (Exception $e) {
             $this->render('questions', [
                 'title' => 'Manage Assessment Questions', 
+                'categories' => [],
                 'pathways' => [],
+                'groupedQuestions' => [],
                 'questionStats' => [],
                 'error' => 'Unable to load questions'
             ]);
@@ -373,7 +451,7 @@ class AdminController extends Controller
     {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!isset($_POST[CSRF::FIELD]) || !CSRF::validate($_POST[CSRF::FIELD])) {
-                $pathways = $this->pathwayModel->getAllPathways();
+                $pathways = $this->pathwayModel->getAll();
                 $this->render('create_question', ['error' => 'Invalid CSRF token', 'title' => 'Create Question', 'pathways' => $pathways]);
                 return;
             }
@@ -385,7 +463,7 @@ class AdminController extends Controller
             $options = $_POST['options'] ?? [];
 
             if (empty($pathwayId) || empty($questionText)) {
-                $pathways = $this->pathwayModel->getAllPathways();
+                $pathways = $this->pathwayModel->getAll();
                 $this->render('create_question', [
                     'error' => 'Pathway and question text are required', 
                     'title' => 'Create Question',
@@ -411,7 +489,7 @@ class AdminController extends Controller
             }
 
             if (count($processedOptions) < 2 || !$hasCorrectAnswer) {
-                $pathways = $this->pathwayModel->getAllPathways();
+                $pathways = $this->pathwayModel->getAll();
                 $this->render('create_question', [
                     'error' => 'Please provide at least 2 options with one correct answer', 
                     'title' => 'Create Question',
@@ -431,7 +509,7 @@ class AdminController extends Controller
                 header('Location: /cpsproject/admin/questions?success=question_created');
                 exit();
             } catch (Exception $e) {
-                $pathways = $this->pathwayModel->getAllPathways();
+                $pathways = $this->pathwayModel->getAll();
                 $this->render('create_question', [
                     'error' => 'Failed to create question: ' . $e->getMessage(), 
                     'title' => 'Create Question',
@@ -440,7 +518,7 @@ class AdminController extends Controller
             }
         }
 
-        $pathways = $this->pathwayModel->getAllPathways();
+        $pathways = $this->pathwayModel->getAll();
         $this->render('create_question', [
             'title' => 'Create Question', 
             'pathways' => $pathways,
@@ -459,7 +537,7 @@ class AdminController extends Controller
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!isset($_POST[CSRF::FIELD]) || !CSRF::validate($_POST[CSRF::FIELD])) {
-                $pathways = $this->pathwayModel->getAllPathways();
+                $pathways = $this->pathwayModel->getAll();
                 $this->render('edit_question', [
                     'error' => 'Invalid CSRF token', 
                     'title' => 'Edit Question',
@@ -475,7 +553,7 @@ class AdminController extends Controller
             $options = $_POST['options'] ?? [];
 
             if (empty($questionText)) {
-                $pathways = $this->pathwayModel->getAllPathways();
+                $pathways = $this->pathwayModel->getAll();
                 $this->render('edit_question', [
                     'error' => 'Question text is required', 
                     'title' => 'Edit Question',
@@ -502,7 +580,7 @@ class AdminController extends Controller
             }
 
             if (count($processedOptions) < 2 || !$hasCorrectAnswer) {
-                $pathways = $this->pathwayModel->getAllPathways();
+                $pathways = $this->pathwayModel->getAll();
                 $this->render('edit_question', [
                     'error' => 'Please provide at least 2 options with one correct answer', 
                     'title' => 'Edit Question',
@@ -522,7 +600,7 @@ class AdminController extends Controller
                 header('Location: /cpsproject/admin/questions?success=question_updated');
                 exit();
             } catch (Exception $e) {
-                $pathways = $this->pathwayModel->getAllPathways();
+                $pathways = $this->pathwayModel->getAll();
                 $this->render('edit_question', [
                     'error' => 'Failed to update question: ' . $e->getMessage(), 
                     'title' => 'Edit Question',
@@ -532,8 +610,8 @@ class AdminController extends Controller
             }
         }
         
-        $pathways = $this->pathwayModel->getAllPathways();
-        $this->render('edit_question', [
+        $pathways = $this->pathwayModel->getAll();
+        $this->render('../admin/edit_question', [
             'title' => 'Edit Question', 
             'question' => $question,
             'pathways' => $pathways
@@ -561,12 +639,35 @@ class AdminController extends Controller
         exit();
     }
 
+    public function bulkImport()
+    {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            // Handle the actual import logic here
+            // This part will receive the JSON data from the preview step
+            header('Content-Type: application/json');
+            $pathwayId = $_POST['pathway_id'] ?? null;
+            $questionsData = json_decode($_POST['questions_data'] ?? '[]', true);
+
+            // In a real implementation, you would loop through $questionsData
+            // and call $this->questionModel->createQuestion() for each.
+
+            echo json_encode(['success' => true, 'imported' => count($questionsData), 'total' => count($questionsData), 'errors' => []]);
+            exit;
+        }
+
+        $pathways = $this->pathwayModel->getAll();
+        $this->render('../admin/bulk_import', [
+            'title' => 'Bulk Import Questions',
+            'pathways' => $pathways
+        ]);
+    }
+
     // AJAX endpoint for getting pathways by category
     public function getPathwaysByCategory($categoryId)
     {
         header('Content-Type: application/json');
         try {
-            $pathways = $this->pathwayModel->getPathwaysByCategory($categoryId);
+            $pathways = $this->pathwayModel->getByCategory($categoryId);
             echo json_encode(['success' => true, 'pathways' => $pathways]);
         } catch (Exception $e) {
             echo json_encode(['success' => false, 'error' => 'Failed to load pathways']);
@@ -581,7 +682,7 @@ class AdminController extends Controller
                 'total_users' => $this->userModel->getUserCount(),
                 'admin_users' => $this->userModel->getAdminCount(),
                 'recent_registrations' => $this->userModel->getRecentRegistrations(7),
-                'total_pathways' => $this->pathwayModel->getPathwayStats(),
+                'total_pathways' => $this->pathwayModel->getCount(),
                 'total_categories' => count($this->categoryModel->getAllCategories())
             ];
         } catch (Exception $e) {

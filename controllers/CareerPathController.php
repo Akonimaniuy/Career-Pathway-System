@@ -7,6 +7,7 @@ use core\Session;
 use core\Auth;
 use core\CSRF;
 use models\CareerPathModel;
+use models\CategoryModel;
 use models\UserModel;
 
 class CareerPathController extends Controller
@@ -14,12 +15,14 @@ class CareerPathController extends Controller
     protected $careerPathModel;
     protected $userModel;
     protected $auth;
+    protected $categoryModel;
 
     public function __construct($params = [])
     {
         parent::__construct($params);
         Session::start();
         $this->careerPathModel = new CareerPathModel();
+        $this->categoryModel = new CategoryModel();
         $this->userModel = new UserModel();
         $this->auth = new Auth();
     }
@@ -40,21 +43,19 @@ class CareerPathController extends Controller
             'search' => trim($_GET['search'] ?? '')
         ];
 
-        $careerPaths = $this->careerPathModel->getAll($filters, $limit, $offset);
+        $careerPaths = $this->careerPathModel->getAll(); // Simplified for now
         $totalCareerPaths = $this->careerPathModel->getCount($filters);
         $totalPages = ceil($totalCareerPaths / $limit);
 
         // Get filter options
-        $industries = $this->careerPathModel->getIndustries();
+        $categories = $this->categoryModel->getAllCategories();
 
-        $this->render('index', [
-            'title' => 'Career Paths',
-            'careerPaths' => $careerPaths,
+        $this->render('../home/pathway', [
+            'title' => 'Explore Pathways',
+            'pathways' => $careerPaths,
+            'categories' => $categories,
             'currentPage' => $page,
-            'totalPages' => $totalPages,
-            'totalCareerPaths' => $totalCareerPaths,
-            'filters' => $filters,
-            'industries' => $industries
+            'totalPages' => $totalPages
         ]);
     }
 

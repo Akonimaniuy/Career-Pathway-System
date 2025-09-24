@@ -7,7 +7,7 @@ use core\Session;
 use core\Auth;
 use core\CSRF;
 use models\CategoryModel;
-use models\PathwayModel;
+use models\CareerPathModel;
 use models\AssessmentModel;
 use \Exception;
 
@@ -22,7 +22,7 @@ class AssessmentController extends Controller
     {
         parent::__construct($params);
         $this->categoryModel = new CategoryModel();
-        $this->pathwayModel = new PathwayModel();
+        $this->pathwayModel = new CareerPathModel();
         $this->assessmentModel = new AssessmentModel();
 
         Session::start();
@@ -35,6 +35,8 @@ class AssessmentController extends Controller
     {
         $categories = $this->categoryModel->getAllCategories();
         $this->render('index', [
+        // This view is now public. The actual assessment start/questions will be protected.
+        // The view file for 'index' needs to be created or updated. Let's assume it's 'assessment/index.php'
             'title' => 'Assessment',
             'message' => 'Select a category and at least 2 pathways to begin your assessment.',
             'categories' => $categories
@@ -222,12 +224,12 @@ class AssessmentController extends Controller
     }
 
     // AJAX endpoint for getting pathways by category
-    public function getPathways($categoryId)
+    public function getPathwaysByCategory($categoryId)
     {
         header('Content-Type: application/json');
         
         try {
-            $pathways = $this->pathwayModel->getPathwaysByCategory($categoryId);
+            $pathways = $this->pathwayModel->getByCategory($categoryId);
             echo json_encode(['success' => true, 'pathways' => $pathways]);
         } catch (Exception $e) {
             echo json_encode(['success' => false, 'error' => 'Failed to load pathways']);
